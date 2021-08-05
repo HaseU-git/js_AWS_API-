@@ -1,38 +1,4 @@
-// Js
-
-// - 画面をデザインする人：　　　スギサキ
-// - 画面HTMLを作る人
-// - Jsで整形する人（map）：
-// - Jsで整形する人（自分達）：
-//     - APIを作る人：　　　　:w
-// 　　　　ニシムラ
-
-
-// HTMLとcssでベースを作る人
-
-// javascriptでAPIを受け取ってHTML反映させる人
-
-
-
-// お菓子の情報と体重の情報が欲しい
-
-
-const run_distance = 10;
-const body_weight = 80;
-const point_rate = 0.1;
-
-// const json_info =  
-// {
-//     user: 
-//     {
-//         weight: 70
-//     },
-//     food: 
-//     {
-//         name: "test_name",
-//         kcal: 100
-//     }
-// }
+//計算する系の関数（なくてもいいかも）
 
 function calculate_used_calories(body_weight, distance)
 {
@@ -44,57 +10,16 @@ function calculate_new_points(used_calories, point_rate)
 	return (used_calories * point_rate);
 }
 
-
-// console.log(run_distance)
-
-// console.log(json_info.food.name)
-
-
-
-// USER
-
-
-// {
-// 	ID: 
-	
-// }
-
-
-
-// const url = "https://qiita.com/saka212/items/9b6cfe06b464580c2ee6";
-
-// res = fetch(url);
-
-// console.log(res);
-
-// query_string = {user_name: "mori", used_calories: 300, new_points: 0};
-
-
-api_uri = "https://jsonplaceholder.typicode.com/posts'";
-
-
-function fetch_aws_api(api_uri="", json_info={})
+function calculate_snack_count(used_calories, snack_calory)
 {
-	let ret = {msg: "", info: {}};
+	return (used_calories / snack_calory);
+}
 
-	if (api_uri == "" || json_info=={})
-	{
-	 	//エラー処理
-		ret.msg = "error" 
-	}
+// APIを叩くための関数
 
-	// const myHeaders = new Headers();
-	// myHeaders.append("Content-Type", "application/json");
-	// const raw = JSON.stringify(json_info);
-
-	// const requestOptions = {
-	// 	method: 'POST',
-	// 	headers: myHeaders,
-	// 	body: raw,
-	// 	mode: 'no-cors',
-	// 	redirect: 'follow'
-	// };
-
+async function fetch_aws_api(api_uri, json_info)
+{
+	// HTTPリクエストの情報
 	const requestOptions = {
 		method: 'POST',
 		headers: 
@@ -106,69 +31,87 @@ function fetch_aws_api(api_uri="", json_info={})
 		body: JSON.stringify(json_info),
 	};
 
-	fetch(api_uri, requestOptions)
-	.then(response => response.json())
-	// .then(result => ret.info = JSON.parse(result).body)
-	.then(result => ret.info = result.body)
-	.catch(error => ret.msg = "error");
-
-	return (ret);
+	const response = await fetch(api_uri, requestOptions);
+	return (response.json());
 }
 
-// 一つ目の処理の場合
+// グローバル変数
 
-let user_name = "";
-let points = 0;
+// 固定のポイントレート？
+const point_rate = 0.1;
+const api_uri = "https://k1hbhurn94.execute-api.us-east-2.amazonaws.com/homepage/info";
 
-function fetch_user_info(api_uri="", user_name)
+// 本当はログイン画面で取得してくる
+let user_name = "Mori";
+
+// 本当はinputから取得してくる
+let distance = 10;
+
+let user_id;
+let user_point;
+let body_weight;
+let snack_id;
+let snack_name;
+let snack_calory;
+let used_calories;
+let snack_count;
+
+function fetch_user_info()
 {
-	json_info = 
+	const login_json_info =
 	{
 		"OperationType": "login",
-		"Keys": {"Name": "Mori"}
+		"Keys": { "Name": user_name }
 	};
-	res_hash = fetch_aws_api(api_uri, json_info);
-	
-	if (res_hash.msg == "error")
-	{
-		//エラー処理
-	}
-	else
-	{
-		user_name = res_hash.info.name;
-		body_weight = res_hash.weight;
-		points = res_hash.point;
-	}
+	fetch_aws_api(api_uri, login_json_info).then
+	(data => 
+		{
+			user_id = data.body["Items"][0].ID;
+			user_name = data.body["Items"][0].Name;
+			user_point = data.body["Items"][0].Point;
+			body_weight = data.body["Items"][0].Weight;
+		}
+	);
 }
 
-// 二つ目の処理の場合
-
-let food_name = "";
-let food_count = 0;
-// let food_image = ????;
-
-
-function fetch_food_info(api_uri="", used_calories=0, user_name="", new_point=0)
+function fetch_snack_info()
 {
-	json_info = 
+	used_calories = calculate_used_calories(body_weight, distance);
+	user_point = calculate_new_points(used_calories, point_rate);
+	const snack_json_info =
 	{
 		"OperationType": "get_snack_num",
 		"Keys": {
-			"burned_calories": 50,
-			"Name": "mori", 
-			"updated_point": 100
+			"burned_calories": used_calories,
+			"Name": user_name,
+			"updated_point": user_point
 		}
 	};
-	res_hash = fetch_aws_api(api_uri, json_info);
-	
-	if (res_hash.msg == "error")
-	{
-		//エラー処理
-	}
-	else
-	{
-		food_name = res_hash.info.name;
-		food_count = res_hash.count;
-		// image = res_hash.image;
-	}
+
+	fetch_aws_api(api_uri, snack_json_info).then	
+	(data =>
+		{
+			snack_id = data.body["Item"].ID;
+			snack_calory = data.body["Item"].Calory;
+			snack_name = data.body["Item"].Name;	
+			snack_count = calculate_snack_count(used_calories, snack_calory);
+		}
+	);
 }
+
+function test()
+{
+	fetch_user_info();
+	fetch_snack_info();
+
+	console.log("user_id = " + user_id);
+	console.log("user_point = " + user_point);
+	console.log("body_weight = " + body_weight);
+	console.log("snack_id = " + snack_id);
+	console.log("snack_name = " + snack_name);
+	console.log("snack_calory = " + snack_calory);
+	console.log("used_calories = " + used_calories);
+	console.log("snack_count = " + snack_count);
+}
+
+test()
