@@ -5,9 +5,9 @@ function calculate_used_calories(body_weight, distance)
 	return (body_weight * distance);
 }
 
-function calculate_new_points(used_calories, point_rate)
+function calculate_new_points(user_point, used_calories, point_rate)
 {
-	return (used_calories * point_rate);
+	return (user_point + used_calories * point_rate);
 }
 
 function calculate_snack_count(used_calories, snack_calory)
@@ -38,7 +38,7 @@ async function fetch_aws_api(api_uri, json_info)
 // グローバル変数
 
 // 固定のポイントレート？
-const point_rate = 0.1;
+const point_rate = 10;
 const api_uri = "https://k1hbhurn94.execute-api.us-east-2.amazonaws.com/homepage/info";
 
 // 本当はログイン画面で取得してくる
@@ -68,8 +68,8 @@ function fetch_user_info()
 		{
 			user_id = data.body["Items"][0].ID;
 			user_name = data.body["Items"][0].Name;
-			user_point = data.body["Items"][0].Point;
 			body_weight = data.body["Items"][0].Weight;
+			user_point = data.body["Items"][0].Point;
 		}
 	);
 }
@@ -77,7 +77,7 @@ function fetch_user_info()
 function fetch_snack_info()
 {
 	used_calories = calculate_used_calories(body_weight, distance);
-	user_point = calculate_new_points(used_calories, point_rate);
+	user_point = calculate_new_points(user_point, used_calories, point_rate);
 	const snack_json_info =
 	{
 		"OperationType": "get_snack_num",
@@ -104,14 +104,16 @@ function test()
 	fetch_user_info();
 	fetch_snack_info();
 
-	console.log("user_id = " + user_id);
-	console.log("user_point = " + user_point);
-	console.log("body_weight = " + body_weight);
-	console.log("snack_id = " + snack_id);
-	console.log("snack_name = " + snack_name);
-	console.log("snack_calory = " + snack_calory);
+	console.log("user_id       = " + user_id);
+	console.log("user_name     = " + user_name);
+	console.log("user_point    = " + user_point);
+	console.log("body_weight   = " + body_weight);
+	console.log("snack_id      = " + snack_id);
+	console.log("snack_name    = " + snack_name);
+	console.log("snack_calory  = " + snack_calory);
 	console.log("used_calories = " + used_calories);
-	console.log("snack_count = " + snack_count);
+	console.log("snack_count   = " + snack_count);
+	console.log("user_point    = " + user_point);
 }
 
 test()
